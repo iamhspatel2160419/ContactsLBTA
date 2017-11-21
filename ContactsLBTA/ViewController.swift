@@ -12,16 +12,38 @@ class ViewController: UITableViewController {
 
     let cellId = "cellId123123"
     
+    //https://www.letsbuildthatapp.com/course_video?id=1852
+    //https://www.letsbuildthatapp.com/course_video?id=1502
+    // you should use Custom Delegation properly instead
+    func someMethodIWantToCall(cell: UITableViewCell) {
+//        print("Inside of ViewController now...")
+        
+        // we're going to figure out which name we're clicking on
+        
+        guard let indexPathTapped = tableView.indexPath(for: cell) else { return }
+        
+        let contact = twoDimensionalArray[indexPathTapped.section].names[indexPathTapped.row]
+        print(contact)
+        
+        let hasFavorited = contact.hasFavorited
+        twoDimensionalArray[indexPathTapped.section].names[indexPathTapped.row].hasFavorited = !hasFavorited
+        
+//        tableView.reloadRows(at: [indexPathTapped], with: .fade)
+        
+        cell.accessoryView?.tintColor = hasFavorited ? UIColor.lightGray : .red
+    }
+    
     var twoDimensionalArray = [
-        ExpandableNames(isExpanded: true, names: ["Amy", "Bill", "Zack", "Steve", "Jack", "Jill", "Mary"]),
-        ExpandableNames(isExpanded: true, names: ["Carl", "Chris", "Christina", "Cameron"]),
-        ExpandableNames(isExpanded: true, names: ["David", "Dan"]),
-        ExpandableNames(isExpanded: true, names: ["Patrick", "Patty"]),
+        ExpandableNames(isExpanded: true, names: ["Amy", "Bill", "Zack", "Steve", "Jack", "Jill", "Mary"].map{ Contact(name: $0, hasFavorited: false) }),
+        ExpandableNames(isExpanded: true, names: ["Carl", "Chris", "Christina", "Cameron"].map{ Contact(name: $0, hasFavorited: false) }),
+        ExpandableNames(isExpanded: true, names: ["David", "Dan"].map{ Contact(name: $0, hasFavorited: false) }),
+        ExpandableNames(isExpanded: true, names: [Contact(name: "Patrick", hasFavorited: false)]),
     ]
     
     var showIndexPaths = false
     
     @objc func handleShowIndexPath() {
+        
         
         print("Attemping reload animation of indexPaths...")
         
@@ -56,7 +78,7 @@ class ViewController: UITableViewController {
         navigationItem.title = "Contacts"
         navigationController?.navigationBar.prefersLargeTitles = true
         
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: cellId)
+        tableView.register(ContactCell.self, forCellReuseIdentifier: cellId)
     }
     
     override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
@@ -116,13 +138,16 @@ class ViewController: UITableViewController {
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: cellId, for: indexPath)
-        let name = twoDimensionalArray[indexPath.section].names[indexPath.row]
+        let cell = tableView.dequeueReusableCell(withIdentifier: cellId, for: indexPath) as! ContactCell
+        cell.link = self
+        let contact = twoDimensionalArray[indexPath.section].names[indexPath.row]
         
-        cell.textLabel?.text = name
+        cell.textLabel?.text = contact.name
+        
+        cell.accessoryView?.tintColor = contact.hasFavorited ? UIColor.red : .lightGray
         
         if showIndexPaths {
-            cell.textLabel?.text = "\(name)   Section:\(indexPath.section) Row:\(indexPath.row)"
+            cell.textLabel?.text = "\(contact.name)   Section:\(indexPath.section) Row:\(indexPath.row)"
         }
         
         return cell
