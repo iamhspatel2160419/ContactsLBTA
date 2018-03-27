@@ -118,6 +118,52 @@ TVC. fecth contacts and display... learn animation,
             }
         } 
       }
+(4)  handling tableview section of all rows collapsing and open logic behind this
+
+       // setting tableview header Button 
+       override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+       
+            let button = UIButton(type: .system)
+            button.setTitle("Close", for: .normal)
+            button.setTitleColor(.black, for: .normal)
+            button.backgroundColor = .yellow
+            button.titleLabel?.font = UIFont.boldSystemFont(ofSize: 14)
+
+            button.addTarget(self, action: #selector(handleExpandClose), for: .touchUpInside)
+
+            // holding section value in tag
+            button.tag = section
+
+            return button
+           }
+        
+
+
+          @objc func handleExpandClose(button: UIButton) {
+            print("Trying to expand and close section...")
+            // get value from tag from through button
+            let section = button.tag
+
+            
+            // we'll try to close the section first by deleting the rows
+            var indexPaths = [IndexPath]()
+            for row in twoDimensionalArray[section].names.indices {
+                print(0, row)
+                let indexPath = IndexPath(row: row, section: section)
+                indexPaths.append(indexPath)
+            }
+
+            let isExpanded = twoDimensionalArray[section].isExpanded
+            twoDimensionalArray[section].isExpanded = !isExpanded
+
+            button.setTitle(isExpanded ? "Open" : "Close", for: .normal)
+
+            if isExpanded {
+                tableView.deleteRows(at: indexPaths, with: .fade)
+            } else {
+                tableView.insertRows(at: indexPaths, with: .fade)
+            }
+        }
     
    
     
