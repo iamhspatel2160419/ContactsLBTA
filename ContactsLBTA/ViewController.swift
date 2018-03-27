@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import Contacts
 
 class ViewController: UITableViewController {
 
@@ -33,12 +34,59 @@ class ViewController: UITableViewController {
         cell.accessoryView?.tintColor = hasFavorited ? UIColor.lightGray : .red
     }
     
-    var twoDimensionalArray = [
-        ExpandableNames(isExpanded: true, names: ["Amy", "Bill", "Zack", "Steve", "Jack", "Jill", "Mary"].map{ Contact(name: $0, hasFavorited: false) }),
-        ExpandableNames(isExpanded: true, names: ["Carl", "Chris", "Christina", "Cameron"].map{ Contact(name: $0, hasFavorited: false) }),
-        ExpandableNames(isExpanded: true, names: ["David", "Dan"].map{ Contact(name: $0, hasFavorited: false) }),
-        ExpandableNames(isExpanded: true, names: [Contact(name: "Patrick", hasFavorited: false)]),
-    ]
+    var twoDimensionalArray = [ExpandableNames]()
+    
+//    var twoDimensionalArray = [
+//        ExpandableNames(isExpanded: true, names: ["Amy", "Bill", "Zack", "Steve", "Jack", "Jill", "Mary"].map{ FavoritableContact(name: $0, hasFavorited: false) }),
+//        ExpandableNames(isExpanded: true, names: ["Carl", "Chris", "Christina", "Cameron"].map{ FavoritableContact(name: $0, hasFavorited: false) }),
+//        ExpandableNames(isExpanded: true, names: ["David", "Dan"].map{ FavoritableContact(name: $0, hasFavorited: false) }),
+//        ExpandableNames(isExpanded: true, names: [FavoritableContact(name: "Patrick", hasFavorited: false)]),
+//    ]
+    
+    private func fetchContacts() {
+        print("Attempting to fetch contacts today..")
+        
+        let store = CNContactStore()
+        
+        store.requestAccess(for: .contacts) { (granted, err) in
+            if let err = err {
+                print("Failed to request access:", err)
+                return
+            }
+            
+            if granted {
+                print("Access granted")
+                
+                let keys = [CNContactGivenNameKey, CNContactFamilyNameKey, CNContactPhoneNumbersKey]
+                let request = CNContactFetchRequest(keysToFetch: keys as [CNKeyDescriptor])
+                
+                do {
+                    
+                    var favoritableContacts = [FavoritableContact]()
+                    
+                    try store.enumerateContacts(with: request, usingBlock: { (contact, stopPointerIfYouWantToStopEnumerating) in
+                        
+                        print(contact.givenName)
+                        print(contact.familyName)
+                        print(contact.phoneNumbers.first?.value.stringValue ?? "")
+                        
+                        favoritableContacts.append(FavoritableContact(contact: contact, hasFavorited: false))
+                        
+//                        favoritableContacts.append(FavoritableContact(name: contact.givenName + " " + contact.familyName, hasFavorited: false))
+                    })
+                    
+                    let names = ExpandableNames(isExpanded: true, names: favoritableContacts)
+                    self.twoDimensionalArray = [names]
+                    
+                } catch let err {
+                    print("Failed to enumerate contacts:", err)
+                }
+                
+            } else {
+                print("Access denied..")
+            }
+        }
+    }
     
     var showIndexPaths = false
     
@@ -72,6 +120,8 @@ class ViewController: UITableViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        fetchContacts()
         
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Show IndexPath", style: .plain, target: self, action: #selector(handleShowIndexPath))
         
@@ -138,16 +188,23 @@ class ViewController: UITableViewController {
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: cellId, for: indexPath) as! ContactCell
+//        let cell = tableView.dequeueReusableCell(withIdentifier: cellId, for: indexPath) as! ContactCell
+        
+        let cell = ContactCell(style: .subtitle, reuseIdentifier: cellId)
+        
         cell.link = self
-        let contact = twoDimensionalArray[indexPath.section].names[indexPath.row]
         
-        cell.textLabel?.text = contact.name
+        let favoritableContact = twoDimensionalArray[indexPath.section].names[indexPath.row]
         
-        cell.accessoryView?.tintColor = contact.hasFavorited ? UIColor.red : .lightGray
+        cell.textLabel?.text = favoritableContact.contact.givenName + " " + favoritableContact.contact.familyName
+        cell.textLabel?.font = UIFont.boldSystemFont(ofSize: 15)
+        
+        cell.detailTextLabel?.text = favoritableContact.contact.phoneNumbers.first?.value.stringValue
+        
+        cell.accessoryView?.tintColor = favoritableContact.hasFavorited ? UIColor.red : .lightGray
         
         if showIndexPaths {
-            cell.textLabel?.text = "\(contact.name)   Section:\(indexPath.section) Row:\(indexPath.row)"
+//            cell.textLabel?.text = "\(favoritableContact.name)   Section:\(indexPath.section) Row:\(indexPath.row)"
         }
         
         return cell
